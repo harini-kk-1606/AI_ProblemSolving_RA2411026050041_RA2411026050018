@@ -1,7 +1,7 @@
 # AI Problem Solving Assignment
 
 **Repository:** AI_ProblemSolving_RA2411026050018
-**Creators:**
+**Creators:** 
 
 * K R Vaishak (RA2411026050018)
 * Harini K K (RA2411026050041)
