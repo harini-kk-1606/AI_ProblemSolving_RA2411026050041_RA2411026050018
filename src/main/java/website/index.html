@@ -1,0 +1,312 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>AI Problem Solving Lab</title>
+
+<style>
+body {
+    background: #0f172a;
+    color: white;
+    font-family: Arial;
+    text-align: center;
+}
+
+button {
+    padding: 10px;
+    margin: 10px;
+    background: #22c55e;
+    border: none;
+    color: white;
+    cursor: pointer;
+}
+
+input, select, textarea {
+    padding: 8px;
+    margin: 5px;
+}
+
+.section {
+    display: none;
+}
+
+svg {
+    background: #1e293b;
+    margin-top: 20px;
+}
+
+.node { fill: #38bdf8; }
+.visited { fill: orange; }
+.path { fill: #22c55e; }
+
+.footer {
+    margin-top: 30px;
+    font-size: 14px;
+    color: #94a3b8;
+}
+</style>
+
+</head>
+
+<body>
+
+<h1>AI Problem Solving Lab</h1>
+
+<p>
+Created by<br>
+K R Vaishak (RA2411026050018)<br>
+Harini K K (RA2411026050041)<br>
+2nd Year CSE-AIML A
+</p>
+
+<div id="home">
+    <button onclick="show('nav')">Problem 8 - Smart Navigation</button>
+    <button onclick="show('rule')">Problem 14 - Insurance Decision</button>
+</div>
+
+<!-- ================= PROBLEM 8 ================= -->
+
+<div id="nav" class="section">
+
+<h2>Smart Navigation System</h2>
+
+<input id="edges" placeholder="A-B, B-C, C-D">
+<br>
+<input id="start" placeholder="Start">
+<input id="goal" placeholder="Goal">
+
+<br>
+
+<button onclick="runBFS()">Run BFS</button>
+<button onclick="runDFS()">Run DFS</button>
+
+<svg id="graph" width="600" height="400"></svg>
+
+<p id="navInfo"></p>
+
+<button onclick="back()">Back</button>
+
+<div class="footer">
+Created by K R Vaishak & Harini K K
+</div>
+
+</div>
+
+<!-- ================= PROBLEM 14 ================= -->
+
+<div id="rule" class="section">
+
+<h2>Insurance Claim Decision System</h2>
+
+<h3>Facts</h3>
+
+<select id="policy">
+<option>true</option>
+<option>false</option>
+</select> Policy Active
+
+<br>
+
+<select id="docs">
+<option>true</option>
+<option>false</option>
+</select> Documents Valid
+
+<br>
+
+<select id="accident">
+<option>true</option>
+<option>false</option>
+</select> Accident Reported
+
+<h3>Rules</h3>
+
+<textarea id="rules" rows="4" cols="40">
+IF policy AND docs THEN approve
+IF NOT accident THEN reject
+</textarea>
+
+<br><br>
+
+<button onclick="evaluateRules()">Evaluate</button>
+
+<p id="ruleOutput"></p>
+
+<button onclick="back()">Back</button>
+
+<div class="footer">
+Created by K R Vaishak & Harini K K
+</div>
+
+</div>
+
+<script>
+
+/* ---------- Navigation ---------- */
+
+function show(id){
+    document.getElementById("home").style.display = "none";
+    document.getElementById(id).style.display = "block";
+}
+
+function back(){
+    document.querySelectorAll(".section").forEach(s=>s.style.display="none");
+    document.getElementById("home").style.display = "block";
+}
+
+let graph = {}, positions = {};
+
+function buildGraph(input){
+    graph = {};
+    input.split(",").forEach(e=>{
+        let [a,b] = e.trim().split("-");
+        if(!graph[a]) graph[a]=[];
+        if(!graph[b]) graph[b]=[];
+        graph[a].push(b);
+        graph[b].push(a);
+    });
+}
+
+function drawGraph(){
+    let svg = document.getElementById("graph");
+    svg.innerHTML = "";
+    let nodes = Object.keys(graph);
+
+    nodes.forEach((n,i)=>{
+        let x = 100 + i*100;
+        let y = 200 + Math.sin(i)*100;
+        positions[n] = {x,y};
+
+        svg.innerHTML += `<circle id="node-${n}" class="node" cx="${x}" cy="${y}" r="20"/>`;
+        svg.innerHTML += `<text x="${x-5}" y="${y+5}" fill="white">${n}</text>`;
+    });
+
+    for(let n in graph){
+        graph[n].forEach(nei=>{
+            let a=positions[n], b=positions[nei];
+            svg.innerHTML += `<line x1="${a.x}" y1="${a.y}" x2="${b.x}" y2="${b.y}" stroke="white"/>`;
+        });
+    }
+}
+
+function sleep(ms){ return new Promise(r=>setTimeout(r,ms)); }
+
+async function runBFS(){
+    buildGraph(edges.value);
+    drawGraph();
+
+    let queue=[[start.value]], visited=new Set(), count=0;
+
+    while(queue.length){
+        let path=queue.shift(), node=path[path.length-1];
+        count++;
+
+        document.getElementById("node-"+node).classList.add("visited");
+        await sleep(500);
+
+        if(node===goal.value){
+            path.forEach(n=>document.getElementById("node-"+n).classList.add("path"));
+            navInfo.innerText="BFS Path: "+path.join(" -> ")+" | Nodes Explored: "+count;
+            return;
+        }
+
+        if(!visited.has(node)){
+            visited.add(node);
+            graph[node].forEach(n=>queue.push([...path,n]));
+        }
+    }
+}
+
+async function runDFS(){
+    buildGraph(edges.value);
+    drawGraph();
+
+    let visited=new Set(), count=0;
+
+    async function dfs(node,path){
+        visited.add(node); count++;
+        document.getElementById("node-"+node).classList.add("visited");
+        await sleep(500);
+
+        if(node===goal.value){
+            path.forEach(n=>document.getElementById("node-"+n).classList.add("path"));
+            navInfo.innerText="DFS Path: "+path.join(" -> ")+" | Nodes Explored: "+count;
+            return true;
+        }
+
+        for(let n of graph[node]){
+            if(!visited.has(n)){
+                if(await dfs(n,[...path,n])) return true;
+            }
+        }
+    }
+
+    dfs(start.value,[start.value]);
+}
+
+/* ---------- Rule Engine ---------- */
+
+function evaluateRules(){
+
+    let facts = {
+        policy: document.getElementById("policy").value === "true",
+        docs: document.getElementById("docs").value === "true",
+        accident: document.getElementById("accident").value === "true"
+    };
+
+    let rulesText = document.getElementById("rules").value.split("\n");
+
+    let decision = "No decision";
+    let appliedRule = "None";
+
+    for(let rule of rulesText){
+
+        rule = rule.trim().toLowerCase();
+
+        if(rule.startsWith("if")){
+
+            let parts = rule.split("then");
+            let condition = parts[0].replace("if","").trim();
+            let action = parts[1].trim();
+
+            let result = evaluateCondition(condition, facts);
+
+            if(result){
+                appliedRule = rule;
+                decision = action === "approve" ? "Claim Approved" : "Claim Rejected";
+                break;
+            }
+        }
+    }
+
+    ruleOutput.innerHTML =
+        "Facts:<br>" +
+        "Policy Active: " + facts.policy + "<br>" +
+        "Documents Valid: " + facts.docs + "<br>" +
+        "Accident Reported: " + facts.accident + "<br><br>" +
+
+        "Rule Applied:<br>" + appliedRule + "<br><br>" +
+
+        "Final Decision:<br>" + decision;
+}
+
+function evaluateCondition(cond, facts){
+
+    cond = cond.replace(/and/g,"&&")
+               .replace(/or/g,"||")
+               .replace(/not/g,"!");
+
+    cond = cond.replace(/policy/g, facts.policy)
+               .replace(/docs/g, facts.docs)
+               .replace(/accident/g, facts.accident);
+
+    try {
+        return eval(cond);
+    } catch {
+        return false;
+    }
+}
+
+</script>
+
+</body>
+</html>
